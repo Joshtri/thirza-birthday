@@ -1,7 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Heart, Gift, MapPin, Calendar, Sparkles } from "lucide-react";
+import {
+  Heart,
+  Gift,
+  MapPin,
+  Calendar,
+  Sparkles,
+  Play,
+  Pause,
+  Volume2,
+  SkipBack,
+  SkipForward,
+  Repeat,
+  Shuffle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { gsap } from "gsap";
@@ -21,6 +34,18 @@ export default function ThirzaBirthdayPage() {
 
   const [showSurprise, setShowSurprise] = useState(false);
 
+  // Music player states
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(70);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRepeat, setIsRepeat] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(false);
+
+  const playerRef = useRef(null);
+  const intervalRef = useRef(null);
+
   // Refs for GSAP animations
   const headerRef = useRef(null);
   const countdownRef = useRef(null);
@@ -32,6 +57,121 @@ export default function ThirzaBirthdayPage() {
   const locationCardRef = useRef(null);
   const wishesCardRef = useRef(null);
   const heartsRef = useRef(null);
+  const musicPlayerRef = useRef(null);
+
+  // YouTube Player Setup
+  useEffect(() => {
+    // Load YouTube IFrame API
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+      playerRef.current = new window.YT.Player("youtube-player", {
+        height: "0",
+        width: "0",
+        videoId: "VuNIsY6JdUw", // You Belong With Me - Taylor Swift
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+        },
+        events: {
+          onReady: (event) => {
+            setIsLoading(false);
+            setDuration(event.target.getDuration());
+            event.target.setVolume(volume);
+          },
+          onStateChange: (event) => {
+            if (event.data === window.YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+              startTimeUpdate();
+            } else if (event.data === window.YT.PlayerState.PAUSED) {
+              setIsPlaying(false);
+              stopTimeUpdate();
+            } else if (event.data === window.YT.PlayerState.ENDED) {
+              setIsPlaying(false);
+              stopTimeUpdate();
+              if (isRepeat) {
+                playerRef.current.seekTo(0);
+                playerRef.current.playVideo();
+              }
+            }
+          },
+        },
+      });
+    };
+
+    return () => {
+      stopTimeUpdate();
+    };
+  }, []);
+
+  const startTimeUpdate = () => {
+    intervalRef.current = setInterval(() => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        setCurrentTime(playerRef.current.getCurrentTime());
+      }
+    }, 1000);
+  };
+
+  const stopTimeUpdate = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const togglePlay = () => {
+    if (!playerRef.current) return;
+
+    if (isPlaying) {
+      playerRef.current.pauseVideo();
+    } else {
+      playerRef.current.playVideo();
+    }
+  };
+
+  const handleSeek = (e) => {
+    if (!playerRef.current) return;
+
+    const newTime = (Number.parseFloat(e.target.value) / 100) * duration;
+    playerRef.current.seekTo(newTime);
+    setCurrentTime(newTime);
+  };
+
+  const handleVolumeChange = (e) => {
+    if (!playerRef.current) return;
+
+    const newVolume = Number.parseFloat(e.target.value);
+    playerRef.current.setVolume(newVolume);
+    setVolume(newVolume);
+  };
+
+  const skipBackward = () => {
+    if (!playerRef.current) return;
+    const newTime = Math.max(0, currentTime - 10);
+    playerRef.current.seekTo(newTime);
+  };
+
+  const skipForward = () => {
+    if (!playerRef.current) return;
+    const newTime = Math.min(duration, currentTime + 10);
+    playerRef.current.seekTo(newTime);
+  };
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     const targetDate = new Date("2025-06-06T00:00:00");
@@ -86,6 +226,25 @@ export default function ThirzaBirthdayPage() {
       yoyo: true,
       ease: "power2.inOut",
     });
+
+    // Music player animation
+    gsap.fromTo(
+      musicPlayerRef.current,
+      { opacity: 0, y: 30 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        delay: 0.5,
+        ease: "back.out(1.7)",
+        scrollTrigger: {
+          trigger: musicPlayerRef.current,
+          start: "top 90%",
+          end: "bottom 10%",
+          toggleActions: "play none none reverse",
+        },
+      }
+    );
 
     // Scroll triggered animations
     gsap.fromTo(
@@ -257,7 +416,7 @@ export default function ThirzaBirthdayPage() {
         ref={heartsRef}
         className="fixed inset-0 pointer-events-none overflow-hidden"
       >
-        {[...Array(12)].map((_, i) => (
+        {[...Array(15)].map((_, i) => (
           <Heart
             key={i}
             className="floating-heart absolute text-rose-300 opacity-60"
@@ -283,6 +442,191 @@ export default function ThirzaBirthdayPage() {
           Orang yang suka senyum yang suka beruang dan dimsum 🐻🥟
         </p>
       </header>
+
+      {/* Enhanced Taylor Swift Music Player */}
+      <div
+        ref={musicPlayerRef}
+        className="relative z-10 max-w-4xl mx-auto px-4 mb-8"
+      >
+        <Card className="bg-gradient-to-r from-purple-100 via-pink-100 to-rose-100 border-purple-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+          <CardContent className="p-6">
+            {/* YouTube Player (Hidden) */}
+            <div id="youtube-player" className="hidden"></div>
+
+            {/* Album Art & Song Info */}
+            <div className="flex items-center gap-6 mb-6">
+              <div className="relative">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
+                  <div className="text-3xl">🎵</div>
+                </div>
+                {isPlaying && (
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg blur opacity-75 animate-pulse"></div>
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-purple-800 mb-1">
+                  You Belong With Me
+                </h3>
+                <p className="text-purple-600 text-lg">Taylor Swift</p>
+                <div className="flex gap-2 mt-2">
+                  <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">
+                    Country Pop
+                  </span>
+                  <span className="text-xs bg-pink-200 text-pink-800 px-2 py-1 rounded-full">
+                    2008
+                  </span>
+                  <span className="text-xs bg-rose-200 text-rose-800 px-2 py-1 rounded-full">
+                    Fearless
+                  </span>
+                </div>
+              </div>
+              {isLoading && (
+                <div className="flex items-center gap-2 text-purple-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                  <span className="text-sm">Loading...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="space-y-2 mb-6">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={duration ? (currentTime / duration) * 100 : 0}
+                onChange={handleSeek}
+                disabled={isLoading}
+                className="w-full h-3 bg-purple-200 rounded-lg appearance-none cursor-pointer slider"
+                style={{
+                  background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${
+                    duration ? (currentTime / duration) * 100 : 0
+                  }%, #e9d5ff ${
+                    duration ? (currentTime / duration) * 100 : 0
+                  }%, #e9d5ff 100%)`,
+                }}
+              />
+              <div className="flex justify-between text-sm text-purple-600">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Control Buttons */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full w-12 h-12 p-0 border-purple-300 hover:bg-purple-100 transition-all duration-200"
+                onClick={() => setIsShuffle(!isShuffle)}
+                disabled={isLoading}
+              >
+                <Shuffle
+                  size={16}
+                  className={`${
+                    isShuffle ? "text-purple-800" : "text-purple-600"
+                  }`}
+                />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full w-12 h-12 p-0 border-purple-300 hover:bg-purple-100 transition-all duration-200"
+                onClick={skipBackward}
+                disabled={isLoading}
+              >
+                <SkipBack size={18} className="text-purple-600" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-full w-16 h-16 p-0 border-purple-300 hover:bg-purple-100 transition-all duration-200 shadow-lg hover:shadow-xl"
+                onClick={togglePlay}
+                disabled={isLoading}
+              >
+                {isPlaying ? (
+                  <Pause size={24} className="text-purple-600" />
+                ) : (
+                  <Play size={24} className="text-purple-600 ml-1" />
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full w-12 h-12 p-0 border-purple-300 hover:bg-purple-100 transition-all duration-200"
+                onClick={skipForward}
+                disabled={isLoading}
+              >
+                <SkipForward size={18} className="text-purple-600" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full w-12 h-12 p-0 border-purple-300 hover:bg-purple-100 transition-all duration-200"
+                onClick={() => setIsRepeat(!isRepeat)}
+                disabled={isLoading}
+              >
+                <Repeat
+                  size={16}
+                  className={`${
+                    isRepeat ? "text-purple-800" : "text-purple-600"
+                  }`}
+                />
+              </Button>
+            </div>
+
+            {/* Volume Control */}
+            <div className="flex items-center gap-3 mb-6">
+              <Volume2 size={18} className="text-purple-600" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={handleVolumeChange}
+                disabled={isLoading}
+                className="flex-1 h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${volume}%, #e9d5ff ${volume}%, #e9d5ff 100%)`,
+                }}
+              />
+              <span className="text-sm text-purple-600 w-8">
+                {Math.round(volume)}%
+              </span>
+            </div>
+
+            {/* Song Quote & Lyrics Preview */}
+            <div className="text-center p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-purple-200">
+              <p className="text-sm text-purple-700 italic mb-3">
+                "Lagu ini mengingatkan kita bahwa kadang orang yang tepat sudah
+                ada di depan mata kita! 💕"
+              </p>
+            </div>
+
+            {/* Music Visualizer Effect */}
+            {isPlaying && (
+              <div className="flex justify-center items-end gap-1 mt-4 h-8">
+                {[...Array(20)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-gradient-to-t from-purple-400 to-pink-400 rounded-full animate-pulse"
+                    style={{
+                      width: "3px",
+                      height: `${Math.random() * 100 + 20}%`,
+                      animationDelay: `${i * 0.1}s`,
+                      animationDuration: `${0.5 + Math.random() * 0.5}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 pb-12">
@@ -380,9 +724,7 @@ export default function ThirzaBirthdayPage() {
                 <div className="text-5xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
                   🍣
                 </div>
-                <h3 className="text-xl font-bold text-green-800 mb-3">
-                  Sushi
-                </h3>
+                <h3 className="text-xl font-bold text-green-800 mb-3">Sushi</h3>
                 <p className="text-green-700 text-sm leading-relaxed">
                   IKAN Kok makan mentah, digoreng dong smpe kering
                 </p>
@@ -418,7 +760,8 @@ export default function ThirzaBirthdayPage() {
                   Salad Sehat
                 </h3>
                 <p className="text-lime-700 text-sm leading-relaxed">
-                  kiraian salad yg sayur, trnyata salad buah (tapi gk ada emoji salad buah) 🌱
+                  kiraian salad yg sayur, trnyata salad buah (tapi gk ada emoji
+                  salad buah) 🌱
                 </p>
               </CardContent>
             </Card>
@@ -440,20 +783,17 @@ export default function ThirzaBirthdayPage() {
                   </h3>
                 </div>
                 <p className="text-amber-700">
-                  meskipun kadonya jauh, tapi pasti akan sampai ke. mungkin tidak sebagus itu, tapi setidaknya bisa kasi kwkkw. sebisanya
+                  meskipun kadonya jauh, tapi pasti akan sampai ke. mungkin
+                  tidak sebagus itu, tapi setidaknya bisa kasi kwkkw. sebisanya
                 </p>
               </div>
 
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Gift className="text-amber-600" size={24} />
-                  <h3 className="text-2xl font-bold text-amber-800">
-                    Hadiah
-                  </h3>
+                  <h3 className="text-2xl font-bold text-amber-800">Hadiah</h3>
                 </div>
-                <p className="text-amber-700 mb-4">
-                coba cek
-                </p>
+                <p className="text-amber-700 mb-4">coba cek</p>
                 <Button
                   onClick={handleSurpriseClick}
                   className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white hover:scale-105 transition-all duration-300 shadow-lg"
@@ -531,7 +871,7 @@ export default function ThirzaBirthdayPage() {
                 </h3>
 
                 {/* Mystery Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
                   <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-purple-200 hover:scale-105 transition-transform duration-300">
                     <div className="text-2xl mb-2">🗝️</div>
                     <p className="text-sm text-purple-700 font-medium">
@@ -545,13 +885,6 @@ export default function ThirzaBirthdayPage() {
                       Lokasi: Jakarta Utara (petunjuk akan menyusul)
                     </p>
                   </div>
-
-                  {/* <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-rose-200 hover:scale-105 transition-transform duration-300">
-                    <div className="text-2xl mb-2">💝</div>
-                    <p className="text-sm text-rose-700 font-medium">
-                      Dibuat khusus dengan cinta untuk Thirza
-                    </p>
-                  </div> */}
                 </div>
 
                 {/* Encrypted Message Effect */}
@@ -604,7 +937,8 @@ export default function ThirzaBirthdayPage() {
                   🎂
                 </div>
                 <p className="text-amber-700">
-                  Semoga ulang tahun tiap tahun selalu dirayain, gk hrus heboh. tpi intinya adalah niatnya.
+                  Semoga ulang tahun tiap tahun selalu dirayain, gk hrus heboh.
+                  tpi intinya adalah niatnya.
                 </p>
               </div>
               <div className="p-4 hover:scale-105 transition-transform duration-300">
@@ -612,20 +946,14 @@ export default function ThirzaBirthdayPage() {
                   💖
                 </div>
                 <p className="text-amber-700">
-                  Semoga dapat yg bisa mengerti dan sekonek dan nyambung mulu dan bisa redain ego sama-sama
+                  Semoga dapat yg bisa mengerti dan sekonek dan nyambung mulu
+                  dan bisa redain ego sama-sama
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
       </main>
-
-      {/* Footer */}
-      {/* <footer className="relative z-10 text-center py-8 px-4">
-        <p className="text-amber-600 font-medium">
-          Dibuat dengan 💝 untuk orang paling luar biasa yang kak kenal
-        </p>
-      </footer> */}
     </div>
   );
 }
