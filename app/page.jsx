@@ -26,6 +26,9 @@ export default function ThirzaBirthdayPage() {
   const countdownRef = useRef(null);
   const bearCardRef = useRef(null);
   const dimsumCardRef = useRef(null);
+  const sushiCardRef = useRef(null);
+  const cheeseCardRef = useRef(null);
+  const saladCardRef = useRef(null);
   const locationCardRef = useRef(null);
   const wishesCardRef = useRef(null);
   const heartsRef = useRef(null);
@@ -101,40 +104,36 @@ export default function ThirzaBirthdayPage() {
       }
     );
 
-    gsap.fromTo(
+    // Food cards animations with stagger
+    const foodCards = [
       bearCardRef.current,
-      { opacity: 0, x: -100, rotation: -10 },
-      {
-        opacity: 1,
-        x: 0,
-        rotation: 0,
-        duration: 0.8,
-        scrollTrigger: {
-          trigger: bearCardRef.current,
-          start: "top 80%",
-          end: "bottom 20%",
-          toggleActions: "play none none reverse",
-        },
-      }
-    );
-
-    gsap.fromTo(
       dimsumCardRef.current,
-      { opacity: 0, x: 100, rotation: 10 },
-      {
-        opacity: 1,
-        x: 0,
-        rotation: 0,
-        duration: 0.8,
-        delay: 0.2,
-        scrollTrigger: {
-          trigger: dimsumCardRef.current,
-          start: "top 80%",
-          end: "bottom 20%",
-          toggleActions: "play none none reverse",
-        },
+      sushiCardRef.current,
+      cheeseCardRef.current,
+      saladCardRef.current,
+    ];
+
+    foodCards.forEach((card, index) => {
+      if (card) {
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 50, rotation: index % 2 === 0 ? -5 : 5 },
+          {
+            opacity: 1,
+            y: 0,
+            rotation: 0,
+            duration: 0.8,
+            delay: index * 0.1,
+            scrollTrigger: {
+              trigger: card,
+              start: "top 80%",
+              end: "bottom 20%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
       }
-    );
+    });
 
     gsap.fromTo(
       locationCardRef.current,
@@ -174,16 +173,82 @@ export default function ThirzaBirthdayPage() {
   }, []);
 
   const handleSurpriseClick = () => {
-    setShowSurprise(!showSurprise);
-
-    if (!showSurprise) {
-      gsap.fromTo(
-        ".surprise-card",
-        { opacity: 0, scale: 0.8, y: 30 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.7)" }
-      );
+    if (showSurprise) {
+      // Close animation before hiding
+      gsap
+        .timeline()
+        .to(".secret-message", { opacity: 0, y: 20, duration: 0.3 })
+        .to(".gift-contents", { opacity: 0, y: 0, scale: 0.8, duration: 0.5 })
+        .to(".mystery-sparkles", { opacity: 0, scale: 0.8, duration: 0.3 })
+        .to(".gift-box-lid", {
+          rotationX: 0,
+          duration: 0.8,
+          ease: "back.out(1.7)",
+          onComplete: () => setShowSurprise(false),
+        });
+    } else {
+      setShowSurprise(true);
     }
   };
+
+  // Add this useEffect for surprise animations
+  useEffect(() => {
+    if (showSurprise) {
+      // Ensure elements are rendered before animating
+      const timer = setTimeout(() => {
+        // Set initial states for animation elements
+        gsap.set(".gift-box-lid", { rotationX: 0 });
+        gsap.set(".gift-contents", { opacity: 0, y: 0, scale: 0.8 });
+        gsap.set(".mystery-sparkles", { opacity: 0, scale: 0.8 });
+        gsap.set(".secret-message", { opacity: 0, y: 20 });
+
+        // Start the opening animation
+        gsap
+          .timeline()
+          .to(".gift-box-lid", {
+            rotationX: -180,
+            transformOrigin: "bottom",
+            duration: 1,
+            ease: "back.out(1.7)",
+          })
+          .to(
+            ".gift-contents",
+            {
+              opacity: 1,
+              y: -20,
+              scale: 1,
+              duration: 0.8,
+              ease: "bounce.out",
+            },
+            "-=0.5"
+          )
+          .to(
+            ".mystery-sparkles",
+            {
+              opacity: 1,
+              scale: 1.2,
+              rotation: 360,
+              duration: 2,
+              stagger: 0.1,
+              ease: "power2.out",
+            },
+            "-=0.8"
+          )
+          .to(
+            ".secret-message",
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              ease: "back.out(1.7)",
+            },
+            "-=0.3"
+          );
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSurprise]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-x-hidden">
@@ -192,7 +257,7 @@ export default function ThirzaBirthdayPage() {
         ref={heartsRef}
         className="fixed inset-0 pointer-events-none overflow-hidden"
       >
-        {[...Array(8)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <Heart
             key={i}
             className="floating-heart absolute text-rose-300 opacity-60"
@@ -261,45 +326,103 @@ export default function ThirzaBirthdayPage() {
           </CardContent>
         </Card>
 
-        {/* Bear & Dimsum Section */}
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <Card
-            ref={bearCardRef}
-            className="bg-white/80 backdrop-blur-sm border-amber-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
-          >
-            <CardContent className="p-8 text-center">
-              <div className="text-6xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
-                🐻
-              </div>
-              <h3 className="text-2xl font-bold text-amber-800 mb-4">
-                Pelukan Beruang Untukmu!
-              </h3>
-              <p className="text-amber-700 leading-relaxed">
-                Seperti beruang favoritmu, kamu membawa kehangatan dan
-                kenyamanan untuk semua orang di sekitarmu. Jiwa lembutmu dan
-                hati yang peduli membuatmu sangat menggemaskan! 🤗
-              </p>
-            </CardContent>
-          </Card>
+        {/* Food Favorites Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-center text-amber-800 mb-8">
+            Makanan Favorit Thirza 🍽️
+          </h2>
 
-          <Card
-            ref={dimsumCardRef}
-            className="bg-white/80 backdrop-blur-sm border-amber-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
-          >
-            <CardContent className="p-8 text-center">
-              <div className="text-6xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
-                🥟
-              </div>
-              <h3 className="text-2xl font-bold text-amber-800 mb-4">
-                Kelezatan Dimsum
-              </h3>
-              <p className="text-amber-700 leading-relaxed">
-                Kecintaanmu pada dimsum menunjukkan apresiasi terhadap
-                kesenangan kecil dalam hidup. Semoga ulang tahunmu dipenuhi
-                kebahagiaan seperti pesta dimsum favoritmu! 🍽️
-              </p>
-            </CardContent>
-          </Card>
+          {/* First Row - Bear & Dimsum */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <Card
+              ref={bearCardRef}
+              className="bg-gradient-to-br from-amber-100 to-orange-100 backdrop-blur-sm border-amber-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <CardContent className="p-8 text-center">
+                <div className="text-6xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer animate-bounce">
+                  🐻
+                </div>
+                <h3 className="text-2xl font-bold text-amber-800 mb-4">
+                  Pelukan Beruang Untukmu!
+                </h3>
+                <p className="text-amber-700 leading-relaxed">
+                  Buat yang suka beruang yang temenin terus di kamar, klo bisa
+                  hidup dia bisa bilang HBD kak tica wkwkkw
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card
+              ref={dimsumCardRef}
+              className="bg-gradient-to-br from-yellow-100 to-amber-100 backdrop-blur-sm border-amber-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <CardContent className="p-8 text-center">
+                <div className="text-6xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
+                  🥟
+                </div>
+                <h3 className="text-2xl font-bold text-amber-800 mb-4">
+                  Kelezatan Dimsum
+                </h3>
+                <p className="text-amber-700 leading-relaxed">
+                  saking sukanya sama dimsum, sampai mau kue ultah pake dimsum
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Second Row - Sushi, Cheese, Salad */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card
+              ref={sushiCardRef}
+              className="bg-gradient-to-br from-green-100 to-emerald-100 backdrop-blur-sm border-green-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <CardContent className="p-6 text-center">
+                <div className="text-5xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
+                  🍣
+                </div>
+                <h3 className="text-xl font-bold text-green-800 mb-3">
+                  Sushi
+                </h3>
+                <p className="text-green-700 text-sm leading-relaxed">
+                  IKAN Kok makan mentah, digoreng dong smpe kering
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card
+              ref={cheeseCardRef}
+              className="bg-gradient-to-br from-yellow-100 to-orange-100 backdrop-blur-sm border-yellow-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <CardContent className="p-6 text-center">
+                <div className="text-5xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
+                  🧀
+                </div>
+                <h3 className="text-xl font-bold text-yellow-800 mb-3">
+                  Keju Lezat
+                </h3>
+                <p className="text-yellow-700 text-sm leading-relaxed">
+                  kesukaannya sama kek jerry, sama-sama suka keju hehe 🧀
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card
+              ref={saladCardRef}
+              className="bg-gradient-to-br from-lime-100 to-green-100 backdrop-blur-sm border-lime-200 shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <CardContent className="p-6 text-center">
+                <div className="text-5xl mb-4 hover:scale-110 transition-transform duration-300 cursor-pointer">
+                  🥗
+                </div>
+                <h3 className="text-xl font-bold text-lime-800 mb-3">
+                  Salad Sehat
+                </h3>
+                <p className="text-lime-700 text-sm leading-relaxed">
+                  kiraian salad yg sayur, trnyata salad buah (tapi gk ada emoji salad buah) 🌱
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Location & Gift Section */}
@@ -317,9 +440,7 @@ export default function ThirzaBirthdayPage() {
                   </h3>
                 </div>
                 <p className="text-amber-700">
-                  Meskipun kamu di Jakarta Utara, pikiran dan doa terbaikku
-                  bersamamu! Jarak tidak berarti apa-apa ketika seseorang
-                  berarti segalanya.
+                  meskipun kadonya jauh, tapi pasti akan sampai ke. mungkin tidak sebagus itu, tapi setidaknya bisa kasi kwkkw. sebisanya
                 </p>
               </div>
 
@@ -327,16 +448,15 @@ export default function ThirzaBirthdayPage() {
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Gift className="text-amber-600" size={24} />
                   <h3 className="text-2xl font-bold text-amber-800">
-                    Hadiah Spesial
+                    Hadiah
                   </h3>
                 </div>
                 <p className="text-amber-700 mb-4">
-                  Aku punya sesuatu yang spesial menunggumu! Tidak sabar melihat
-                  senyummu saat menerimanya. 🎁
+                coba cek
                 </p>
                 <Button
                   onClick={handleSurpriseClick}
-                  className="bg-amber-600 hover:bg-amber-700 text-white hover:scale-105 transition-all duration-300"
+                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white hover:scale-105 transition-all duration-300 shadow-lg"
                 >
                   {showSurprise ? "Sembunyikan Kejutan" : "Buka Kejutan"} ✨
                 </Button>
@@ -345,22 +465,118 @@ export default function ThirzaBirthdayPage() {
           </CardContent>
         </Card>
 
-        {/* Surprise Message */}
+        {/* Animated Gift Box Surprise */}
         {showSurprise && (
-          <Card className="surprise-card mb-8 bg-gradient-to-r from-rose-100 to-pink-100 border-rose-200 shadow-lg">
-            <CardContent className="p-8 text-center">
-              <div className="text-4xl mb-4">💕</div>
-              <h3 className="text-2xl font-bold text-rose-800 mb-4">
-                Pesan dari Hati
-              </h3>
-              <p className="text-rose-700 text-lg leading-relaxed max-w-2xl mx-auto">
-                Thirza tersayang, kamu bukan hanya sahabat terdekatku, tapi
-                seseorang yang sangat istimewa bagiku. Kebaikanmu, tawamu, dan
-                cara kamu menerangi setiap ruangan yang kamu masuki membuat
-                duniaku lebih cerah. Di hari ulang tahunmu, aku ingin kamu tahu
-                betapa berartinya kamu bagiku. Ini untuk tahun lain kehadiranmu
-                yang luar biasa di dunia ini! 🌟
-              </p>
+          <Card className="surprise-card mb-8 bg-gradient-to-r from-purple-100 via-pink-100 to-rose-100 border-purple-200 shadow-lg overflow-hidden">
+            <CardContent className="p-8 text-center relative">
+              {/* Mystery Sparkles */}
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(15)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="mystery-sparkles absolute opacity-0"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                    }}
+                  >
+                    <Sparkles
+                      className="text-purple-400"
+                      size={12 + Math.random() * 8}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* 3D Gift Box */}
+              <div
+                className="relative mx-auto w-32 h-32 mb-6"
+                style={{ perspective: "200px" }}
+              >
+                {/* Gift Box Base */}
+                <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600 rounded-lg shadow-lg transform-gpu">
+                  <div className="absolute inset-2 bg-gradient-to-br from-red-300 to-red-500 rounded"></div>
+                </div>
+
+                {/* Gift Box Ribbon Vertical */}
+                <div className="absolute left-1/2 top-0 w-4 h-full bg-gradient-to-b from-yellow-300 to-yellow-500 transform -translate-x-1/2 shadow-md"></div>
+
+                {/* Gift Box Ribbon Horizontal */}
+                <div className="absolute top-1/2 left-0 w-full h-4 bg-gradient-to-r from-yellow-300 to-yellow-500 transform -translate-y-1/2 shadow-md"></div>
+
+                {/* Gift Box Lid */}
+                <div className="gift-box-lid absolute inset-0 bg-gradient-to-br from-red-500 to-red-700 rounded-lg shadow-xl transform-gpu origin-bottom">
+                  <div className="absolute inset-2 bg-gradient-to-br from-red-400 to-red-600 rounded"></div>
+                  {/* Bow on top */}
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+                    <div className="w-6 h-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full"></div>
+                    <div className="absolute top-1 left-1 w-4 h-2 bg-gradient-to-r from-yellow-300 to-yellow-500 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Gift Contents (Hidden initially) */}
+                <div className="gift-contents absolute inset-0 opacity-0 scale-75 transform-gpu">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-4xl animate-pulse">🎁</div>
+                  </div>
+                  {/* Magical glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-lg animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Secret Message */}
+              <div className="secret-message opacity-0 transform translate-y-5">
+                <h3 className="text-2xl font-bold text-purple-800 mb-4 flex items-center justify-center gap-2">
+                  <span>🤫</span> Rahasia Kecil <span>🤫</span>
+                </h3>
+
+                {/* Mystery Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+                  <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-purple-200 hover:scale-105 transition-transform duration-300">
+                    <div className="text-2xl mb-2">🗝️</div>
+                    <p className="text-sm text-purple-700 font-medium">
+                      Ada sesuatu yang spesial menunggumu...
+                    </p>
+                  </div>
+
+                  <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-pink-200 hover:scale-105 transition-transform duration-300">
+                    <div className="text-2xl mb-2">📍</div>
+                    <p className="text-sm text-pink-700 font-medium">
+                      Lokasi: Jakarta Utara (petunjuk akan menyusul)
+                    </p>
+                  </div>
+
+                  {/* <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-rose-200 hover:scale-105 transition-transform duration-300">
+                    <div className="text-2xl mb-2">💝</div>
+                    <p className="text-sm text-rose-700 font-medium">
+                      Dibuat khusus dengan cinta untuk Thirza
+                    </p>
+                  </div> */}
+                </div>
+
+                {/* Encrypted Message Effect */}
+                <div className="bg-black/80 rounded-lg p-4 font-mono text-green-400 text-sm mb-4 max-w-md mx-auto">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span>DECRYPTING MESSAGE...</span>
+                  </div>
+                  <div className="text-xs opacity-80">
+                    {"> "}BIRTHDAY_SURPRISE.exe loading...
+                    <br />
+                    {"> "}STATUS: READY FOR DELIVERY
+                    <br />
+                    {"> "}RECIPIENT: THIRZA ✓<br />
+                    {"> "}SENDER: KAK ✓<br />
+                    {"> "}LOCATION: JAKARTA_UTARA ✓
+                  </div>
+                </div>
+
+                <p className="text-purple-600 text-sm italic">
+                  "Beberapa kejutan terbaik datang dalam paket kecil... dan
+                  beberapa lainnya butuh sedikit perjalanan untuk menemukannya!
+                  😉"
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -372,7 +588,7 @@ export default function ThirzaBirthdayPage() {
         >
           <CardContent className="p-8 text-center">
             <h3 className="text-3xl font-bold text-amber-800 mb-6">
-              Doa Ulang Tahun Untukmu
+              Doa Ulang Tahun
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="p-4 hover:scale-105 transition-transform duration-300">
@@ -388,7 +604,7 @@ export default function ThirzaBirthdayPage() {
                   🎂
                 </div>
                 <p className="text-amber-700">
-                  Semoga ulang tahunmu menjadi yang termanis!
+                  Semoga ulang tahun tiap tahun selalu dirayain, gk hrus heboh. tpi intinya adalah niatnya.
                 </p>
               </div>
               <div className="p-4 hover:scale-105 transition-transform duration-300">
@@ -396,7 +612,7 @@ export default function ThirzaBirthdayPage() {
                   💖
                 </div>
                 <p className="text-amber-700">
-                  Kamu pantas mendapat semua kebahagiaan di dunia!
+                  Semoga dapat yg bisa mengerti dan sekonek dan nyambung mulu dan bisa redain ego sama-sama
                 </p>
               </div>
             </div>
@@ -405,11 +621,11 @@ export default function ThirzaBirthdayPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 text-center py-8 px-4">
+      {/* <footer className="relative z-10 text-center py-8 px-4">
         <p className="text-amber-600 font-medium">
-          Dibuat dengan 💝 untuk orang paling luar biasa yang aku kenal
+          Dibuat dengan 💝 untuk orang paling luar biasa yang kak kenal
         </p>
-      </footer>
+      </footer> */}
     </div>
   );
 }
